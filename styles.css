@@ -989,18 +989,30 @@ footer .footer-contact a:hover {
 #commentInput {
     width: 100%;
     padding: 10px;
-    border: none;
+    border: 1px solid #ddd;
     border-radius: 5px;
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    background: #fff;
+    color: #333;
     font-size: 0.9rem;
     outline: none;
     resize: none;
     height: 60px;
 }
 
+#commentInput:focus {
+    border-color: #9b4dca;
+    box-shadow: 0 0 5px rgba(155, 77, 202, 0.3);
+}
+
 #commentInput::placeholder {
-    color: #aaa;
+    color: #666;
+    opacity: 1;
+}
+
+/* 全てのテキストエリアのplaceholderを濃く */
+textarea::placeholder {
+    color: #666;
+    opacity: 1;
 }
 
 #submitComment {

@@ -2438,7 +2438,10 @@ function addMarkers(spots) {
             iconAnchor: [15, 42]
         });
 
-        const marker = L.marker([spot.lat, spot.lng], { icon: icon })
+        const marker = L.marker([spot.lat, spot.lng], { 
+            icon: icon,
+            spotId: spot.id  // スポットIDを追加
+        })
             .addTo(map)
             .on('click', () => showSpotInfo(spot));
 
@@ -3035,8 +3038,16 @@ async function getComments(spotId) {
         const parentComments = commentsArray.filter(c => !c.replyTo);
         const replies = commentsArray.filter(c => c.replyTo);
         
+        console.log('全コメント:', commentsArray.length, '親:', parentComments.length, '返信:', replies.length);
+        
         parentComments.forEach(parent => {
-            parent.replies = replies.filter(r => r.replyTo === parent.id);
+            parent.replies = replies.filter(r => {
+                // 数値と文字列の両方で比較
+                return r.replyTo == parent.id || String(r.replyTo) === String(parent.id);
+            });
+            if (parent.replies.length > 0) {
+                console.log(`コメント ${parent.id} に ${parent.replies.length} 件の返信`);
+            }
         });
         
         // 新しい順にソート
@@ -3090,7 +3101,7 @@ async function displayComments(spotId) {
                     </div>
                 </div>
                 ${comment.reported ? '<div style="color: #ff6b6b; font-size: 0.85em; margin-bottom: 5px;">⚠️ このコメントは通報されています</div>' : ''}
-                <div style="margin-bottom: 10px; white-space: pre-wrap;">${comment.text}</div>
+                <div style="margin-bottom: 10px; white-space: pre-wrap; color: #222; font-size: 1em; line-height: 1.5;">${comment.text}</div>
                 ${comment.image ? `<img src="${comment.image}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" alt="投稿画像">` : ''}
                 <div id="replies-${comment.id}" style="margin-top: 10px; padding-left: 20px; border-left: 2px solid #ddd;"></div>
                 <div id="reply-form-${comment.id}" style="display: none; margin-top: 10px; padding-left: 20px;">
@@ -3118,7 +3129,7 @@ async function displayComments(spotId) {
                     replyItem.style.cssText = 'background: #fff; padding: 10px; margin-top: 10px; border-radius: 6px; font-size: 0.95em;';
                     replyItem.innerHTML = `
                         <div style="color: #888; font-size: 0.85em; margin-bottom: 5px;">${reply.date}</div>
-                        <div style="white-space: pre-wrap;">${reply.text}</div>
+                        <div style="white-space: pre-wrap; color: #333; line-height: 1.5;">${reply.text}</div>
                         ${reply.image ? `<img src="${reply.image}" style="max-width: 100%; border-radius: 6px; margin-top: 8px;" alt="返信画像">` : ''}
                     `;
                     repliesContainer.appendChild(replyItem);
@@ -3159,11 +3170,15 @@ function setupCommentActions(spotId) {
         btn.addEventListener('click', async () => {
             const commentId = btn.dataset.commentId;
             const replyText = document.getElementById(`reply-text-${commentId}`).value.trim();
+            console.log('返信送信:', { commentId, replyText, spotId });
             if (replyText) {
                 btn.disabled = true;
                 btn.textContent = '送信中...';
-                await saveComment(spotId, replyText, null, parseInt(commentId));
+                const result = await saveComment(spotId, replyText, null, parseInt(commentId));
+                console.log('返信保存結果:', result);
                 await displayComments(spotId);
+            } else {
+                alert('返信内容を入力してください');
             }
         });
     });
@@ -3357,7 +3372,44 @@ async function displayRanking() {
         
         topSpots.forEach((spot, index) => {
             const listItem = document.createElement('li');
+            listItem.style.cursor = 'pointer';
             listItem.innerHTML = `<span>${index + 1}. ${spot.name}</span> <span>${spot.views} 回</span>`;
+            
+            // クリックでスポット詳細を表示
+            listItem.addEventListener('click', () => {
+                // 地図をスポットの位置に移動
+                map.setView([spot.lat, spot.lng], 15);
+                
+                // スポット情報を表示
+                showSpotInfo(spot);
+                
+                // マーカーをハイライト（バウンドアニメーション）
+                const marker = markers.find(m => m.options.spotId === spot.id);
+                if (marker) {
+                    marker.openPopup();
+                }
+                
+                // モバイルの場合、サイドメニューを閉じる
+                if (window.innerWidth <= 768) {
+                    const controlsPanel = document.getElementById('controlsPanel');
+                    const mobileOverlay = document.getElementById('mobileOverlay');
+                    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+                    
+                    if (controlsPanel) controlsPanel.classList.remove('mobile-open');
+                    if (mobileOverlay) mobileOverlay.classList.remove('active');
+                    if (mobileMenuToggle) mobileMenuToggle.textContent = '☰';
+                }
+            });
+            
+            // ホバーエフェクト
+            listItem.addEventListener('mouseenter', () => {
+                listItem.style.background = '#f0f0f0';
+            });
+            
+            listItem.addEventListener('mouseleave', () => {
+                listItem.style.background = '';
+            });
+            
             rankingList.appendChild(listItem);
         });
     } catch (error) {
