@@ -3010,6 +3010,26 @@ function incrementViewCount(spotId) {
 // 人気スポットランキングを取得する関数
 function getTopSpots() {
     const viewCounts = JSON.parse(localStorage.getItem('viewCounts')) || {};
+    
+    // LocalStorageが空の場合、初期データを設定
+    if (Object.keys(viewCounts).length === 0) {
+        // 人気スポットの初期データ（トップ10）
+        const initialViewCounts = {
+            1: 156,   // 青木ヶ原樹海
+            2: 142,   // 旧犬鳴トンネル
+            3: 128,   // 慰霊の森
+            4: 115,   // 旧本坂トンネル
+            5: 98,    // 八王子城跡
+            6: 87,    // 笹子トンネル
+            7: 76,    // 常紋トンネル
+            8: 65,    // 軍艦島
+            146: 54,  // 旧吹上トンネル
+            147: 43   // 鬼怒川温泉廃墟群
+        };
+        localStorage.setItem('viewCounts', JSON.stringify(initialViewCounts));
+        Object.assign(viewCounts, initialViewCounts);
+    }
+    
     const spotsWithViews = hauntedSpots.map(spot => ({
         ...spot,
         views: viewCounts[spot.id] || 0
