@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- SEO対策 -->
+    <title>日本心霊スポットマップ | 全国145箇所以上の心霊スポットを地図で検索</title>
+    <meta name="description" content="全国145箇所以上の心霊スポットを掲載。地図から検索、詳細情報、アクセス方法、体験談、地元の証言、ニュース記事、メディア出演歴、ストリートビューで現地確認。日本最大級の心霊スポットデータベース。">
+    <meta name="keywords" content="心霊スポット,廃墟,トンネル,日本,地図,怖い場所,心霊現象,肝試し,青木ヶ原樹海,犬鳴トンネル,八王子城,軍艦島,廃病院,自殺の名所">
+    <meta name="author" content="日本心霊スポットマップ">
+    
+    <!-- OGP (Open Graph Protocol) - SNSシェア用 -->
+    <meta property="og:title" content="日本心霊スポットマップ - 全国145箇所以上">
+    <meta property="og:description" content="全国の心霊スポットを地図で検索。詳細情報、体験談、ストリートビューで確認できます。">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="日本心霊スポットマップ">
+    <meta property="og:locale" content="ja_JP">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="日本心霊スポットマップ">
+    <meta name="twitter:description" content="全国145箇所以上の心霊スポットを地図で検索">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👻</text></svg>">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- モバイルメニュートグル -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="メニュー">
+        ☰
+    </button>
+    
+    <!-- モバイルオーバーレイ -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    
+    <!-- フローティングアクションボタン -->
+    <div class="fab-container">
+        <button class="fab" id="fabTop" title="トップへ戻る">↑</button>
+        <button class="fab fab-primary" id="fabMap" title="地図を表示">🗺️</button>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>🌙 日本心霊スポットマップ 👻</h1>
+            <p class="subtitle">全国の有名な心霊スポットを地図上で確認できます</p>
+        </header>
+        
+        <div class="controls" id="controlsPanel">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="スポット名で検索...">
+                <button id="searchBtn">🔍 検索</button>
+            </div>
+            
+            <div class="filter-row">
+                <div class="filter-section">
+                    <h3>📂 カテゴリー</h3>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-type="all">すべて</button>
+                        <button class="filter-btn" data-type="廃墟">廃墟</button>
+                        <button class="filter-btn" data-type="トンネル">トンネル</button>
+                        <button class="filter-btn" data-type="峠">峠</button>
+                        <button class="filter-btn" data-type="病院">病院</button>
+                        <button class="filter-btn" data-type="自殺スポット">自殺スポット</button>
+                        <button class="filter-btn" data-type="その他">その他</button>
+                    </div>
+                </div>
+                
+                <div class="ranking-section">
+                    <h3 id="rankingToggle" class="ranking-toggle collapsed">🏆 人気スポット TOP10</h3>
+                    <ol id="rankingList" class="ranking-list hidden">
+                        <!-- ランキングがここに表示されます -->
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h3>🗾 地域</h3>
+                <div class="filter-buttons">
+                    <button class="region-btn active" data-region="all">全国</button>
+                    <button class="region-btn" data-region="北海道">北海道</button>
+                    <button class="region-btn" data-region="東北">東北</button>
+                    <button class="region-btn" data-region="関東">関東</button>
+                    <button class="region-btn" data-region="中部">中部</button>
+                    <button class="region-btn" data-region="関西">関西</button>
+                    <button class="region-btn" data-region="中国">中国</button>
+                    <button class="region-btn" data-region="四国">四国</button>
+                    <button class="region-btn" data-region="九州">九州</button>
+                </div>
+            </div>
+            
+            <div class="dropdown-menu hidden" id="spotDropdown">
+                <h4>📍 該当するスポット</h4>
+                <ul id="spotList" class="spot-list">
+                    <!-- スポット名がここに表示されます -->
+                </ul>
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            <div id="map">
+                <!-- 地図上のオーバーレイ情報 -->
+                <div class="map-overlay" id="mapOverlay" style="display:none;">
+                    <span class="map-overlay-close" id="overlayClose">&times;</span>
+                    <h3>📊 スポット統計</h3>
+                    <div class="map-stats" id="mapStats">
+                        <p>総スポット数: <strong id="totalSpots">0</strong></p>
+                        <p>表示中: <strong id="visibleSpots">0</strong></p>
+                        <p>危険度・高: <strong id="highDanger">0</strong></p>
+                        <p>危険度・中: <strong id="midDanger">0</strong></p>
+                        <p>危険度・低: <strong id="lowDanger">0</strong></p>
+                    </div>
+                </div>
+                
+                <!-- 地図の凡例 -->
+                <div class="map-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff0000;"></div>
+                        <span>危険度・高</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffa500;"></div>
+                        <span>危険度・中</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00ff00;"></div>
+                        <span>危険度・低</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="spotInfo" class="spot-info">
+                <div class="placeholder-text">
+                    <h3>👈 地図上のマーカーをクリック</h3>
+                    <p>心霊スポットの詳細情報と画像が表示されます</p>
+                </div>
+                <div class="spot-details hidden">
+                    <div class="spot-image-container">
+                        <img id="spotImage" src="" alt="スポット画像">
+                        <button class="fav-btn" id="favBtn" title="お気に入りに追加">
+                            <span class="fav-icon">☆</span>
+                        </button>
+                    </div>
+                    <h2 id="spotName"></h2>
+                    
+                    <div class="action-buttons">
+                        <button class="action-btn" id="shareBtn">
+                            <span>🔗</span> シェア
+                        </button>
+                        <button class="action-btn" id="routeBtn">
+                            <span>🗺️</span> ルート検索
+                        </button>
+                        <button class="action-btn" id="streetViewBtn">
+                            <span>📷</span> ストリートビュー
+                        </button>
+                    </div>
+                    
+                    <!-- ストリートビューセクション -->
+                    <div class="info-section" id="streetViewSection" style="display: none;">
+                        <h3 class="section-title">📷 現地の様子</h3>
+                        <div class="section-content">
+                            <div id="streetViewContainer" class="street-view-container">
+                                <div id="streetView" class="street-view"></div>
+                                <button class="street-view-close" id="closeStreetView">✕ 閉じる</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-content">
+                        <div class="info-row">
+                            <p><strong>📍 場所:</strong> <span id="spotLocation"></span></p>
+                            <p><strong>🏷️ カテゴリー:</strong> <span id="spotType"></span></p>
+                            <p><strong>⚠️ 危険度:</strong> <span id="spotDanger"></span></p>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3 class="section-title">概要</h3>
+                            <div class="section-content" id="spotOverview"></div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3 class="section-title">歴史</h3>
+                            <div class="section-content" id="spotHistory"></div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3 class="section-title">噂</h3>
+                            <div class="section-content" id="spotRumor"></div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3 class="section-title">体験談</h3>
+                            <div class="section-content" id="spotExperience"></div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3 class="section-title">アクセス方法</h3>
+                            <div class="section-content" id="spotAccess"></div>
+                        </div>
+                        
+                        <div class="info-section" id="folkloreSection" style="display: none;">
+                            <h3 class="section-title">📖 地元の言い伝え</h3>
+                            <div class="section-content">
+                                <ul id="spotFolklore" class="info-list"></ul>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section" id="testimoniesSection" style="display: none;">
+                            <h3 class="section-title">👴 地域住民の証言</h3>
+                            <div class="section-content">
+                                <ul id="spotTestimonies" class="info-list testimony-list"></ul>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section" id="newsSection" style="display: none;">
+                            <h3 class="section-title">📰 関連ニュース記事</h3>
+                            <div class="section-content">
+                                <ul id="spotNews" class="info-list news-list"></ul>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section" id="mediaSection" style="display: none;">
+                            <h3 class="section-title">🎬 メディア出演歴</h3>
+                            <div class="section-content">
+                                <ul id="spotMedia" class="info-list media-list"></ul>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3 class="section-title">コメント</h3>
+                            <div class="comments-container" id="commentsContainer">
+                                <!-- コメント表示エリア -->
+                                <div class="comments-list" id="commentsList"></div>
+                                <!-- コメント入力フォーム -->
+                                <div class="comment-form">
+                                    <textarea id="commentInput" placeholder="コメントを入力..."></textarea>
+                                    <button id="submitComment">送信</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- シェアモーダル -->
+        <div id="shareModal" class="modal hidden">
+            <div class="modal-content">
+                <span class="modal-close">&times;</span>
+                <h2>シェアする</h2>
+                <div class="share-buttons">
+                    <button class="share-btn twitter" id="shareTwitter">
+                        <span>🐦</span> Twitter
+                    </button>
+                    <button class="share-btn facebook" id="shareFacebook">
+                        <span>📘</span> Facebook
+                    </button>
+                    <button class="share-btn line" id="shareLine">
+                        <span>💬</span> LINE
+                    </button>
+                    <button class="share-btn copy" id="copyLink">
+                        <span>📋</span> リンクをコピー
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>⚠️ 注意: 私有地への無断侵入は法律で禁止されています。安全に配慮してください。</p>
+            <div class="footer-links">
+                <a href="#" id="aboutLink">サイトについて</a> | 
+                <a href="#" id="contactLink">お問い合わせ</a> | 
+                <a href="#" id="privacyLink">プライバシーポリシー</a>
+            </div>
+            <p class="credit">© 2025 日本心霊スポットマップ</p>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
