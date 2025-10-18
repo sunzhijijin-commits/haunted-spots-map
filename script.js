@@ -3000,53 +3000,70 @@ showSpotInfo = function(spot) {
     displayComments(spot.id);
 };
 
-// スポットの閲覧回数を保存する関数
-function incrementViewCount(spotId) {
-    const viewCounts = JSON.parse(localStorage.getItem('viewCounts')) || {};
-    viewCounts[spotId] = (viewCounts[spotId] || 0) + 1;
-    localStorage.setItem('viewCounts', JSON.stringify(viewCounts));
-}
-
-// 人気スポットランキングを取得する関数
-function getTopSpots() {
-    const viewCounts = JSON.parse(localStorage.getItem('viewCounts')) || {};
-    
-    // LocalStorageが空の場合、初期データを設定
-    if (Object.keys(viewCounts).length === 0) {
-        // 人気スポットの初期データ（トップ10）
-        const initialViewCounts = {
-            1: 156,   // 青木ヶ原樹海
-            2: 142,   // 旧犬鳴トンネル
-            3: 128,   // 慰霊の森
-            4: 115,   // 旧本坂トンネル
-            5: 98,    // 八王子城跡
-            6: 87,    // 笹子トンネル
-            7: 76,    // 常紋トンネル
-            8: 65,    // 軍艦島
-            146: 54,  // 旧吹上トンネル
-            147: 43   // 鬼怒川温泉廃墟群
-        };
-        localStorage.setItem('viewCounts', JSON.stringify(initialViewCounts));
-        Object.assign(viewCounts, initialViewCounts);
+// スポットの閲覧回数を保存する関数（Firebase使用）
+async function incrementViewCount(spotId) {
+    if (!window.firebaseDB) {
+        console.warn('Firebase not initialized yet');
+        return;
     }
     
-    const spotsWithViews = hauntedSpots.map(spot => ({
-        ...spot,
-        views: viewCounts[spot.id] || 0
-    }));
-    return spotsWithViews.sort((a, b) => b.views - a.views).slice(0, 10);
+    try {
+        const countRef = window.firebaseRef(window.firebaseDB, `viewCounts/${spotId}`);
+        await window.firebaseRunTransaction(countRef, (currentValue) => {
+            return (currentValue || 0) + 1;
+        });
+        console.log(`閲覧回数を更新しました: スポットID ${spotId}`);
+    } catch (error) {
+        console.error('閲覧回数の更新に失敗しました:', error);
+    }
 }
 
-// ランキングを表示する関数
-function displayRanking() {
+// 人気スポットランキングを取得する関数（Firebase使用）
+async function getTopSpots() {
+    if (!window.firebaseDB) {
+        console.warn('Firebase not initialized yet');
+        return [];
+    }
+    
+    try {
+        const viewCountsRef = window.firebaseRef(window.firebaseDB, 'viewCounts');
+        const snapshot = await window.firebaseGet(viewCountsRef);
+        const viewCounts = snapshot.val() || {};
+        
+        const spotsWithViews = hauntedSpots.map(spot => ({
+            ...spot,
+            views: viewCounts[spot.id] || 0
+        }));
+        return spotsWithViews.sort((a, b) => b.views - a.views).slice(0, 10);
+    } catch (error) {
+        console.error('ランキングの取得に失敗しました:', error);
+        return [];
+    }
+}
+
+// ランキングを表示する関数（非同期対応）
+async function displayRanking() {
     const rankingList = document.getElementById('rankingList');
-    rankingList.innerHTML = '';
-    const topSpots = getTopSpots();
-    topSpots.forEach((spot, index) => {
-        const listItem = document.createElement('li');
-        listItem.innerHTML = `<span>${index + 1}. ${spot.name}</span> <span>${spot.views} 回</span>`;
-        rankingList.appendChild(listItem);
-    });
+    rankingList.innerHTML = '<li style="color: #888; text-align: center;">読込中...</li>';
+    
+    try {
+        const topSpots = await getTopSpots();
+        rankingList.innerHTML = '';
+        
+        if (topSpots.length === 0) {
+            rankingList.innerHTML = '<li style="color: #888; text-align: center;">データがありません</li>';
+            return;
+        }
+        
+        topSpots.forEach((spot, index) => {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<span>${index + 1}. ${spot.name}</span> <span>${spot.views} 回</span>`;
+            rankingList.appendChild(listItem);
+        });
+    } catch (error) {
+        console.error('ランキング表示エラー:', error);
+        rankingList.innerHTML = '<li style="color: #ff6b6b; text-align: center;">読込に失敗しました</li>';
+    }
 }
 
 // スポット情報を表示する際に閲覧回数を更新
@@ -3247,7 +3264,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     setupCommentFeature();
-    displayRanking();
+    
+    // Firebaseの初期化を待ってからランキングを表示
+    const waitForFirebase = setInterval(() => {
+        if (window.firebaseDB) {
+            clearInterval(waitForFirebase);
+            displayRanking();
+        }
+    }, 100);
+    
     setupRankingToggle();
     setupMobileFeatures();
 });
