@@ -232,6 +232,22 @@
                             </div>
                         </div>
                         
+                        <!-- Amazonアフィリエイトセクション -->
+                        <div class="info-section affiliate-section">
+                            <h3 class="section-title">📚 関連書籍・グッズ</h3>
+                            <div class="section-content">
+                                <p style="font-size: 0.9rem; color: #aaa; margin-bottom: 15px;">
+                                    心霊スポット探索に役立つ書籍やグッズをご紹介
+                                </p>
+                                <div class="affiliate-grid" id="affiliateLinks">
+                                    <!-- アフィリエイトリンクがここに動的に追加されます -->
+                                </div>
+                                <p style="font-size: 0.7rem; color: #666; margin-top: 15px; text-align: center; line-height: 1.6;">
+                                    ※ 当サイトは、Amazon.co.jpを宣伝しリンクすることによってサイトが紹介料を獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである、Amazonアソシエイト・プログラムの参加者です。
+                                </p>
+                            </div>
+                        </div>
+                        
                         <div class="info-section">
                             <h3 class="section-title">コメント</h3>
                             <div class="comments-container" id="commentsContainer">
@@ -275,11 +291,47 @@
             <p>⚠️ 注意: 私有地への無断侵入は法律で禁止されています。安全に配慮してください。</p>
             <div class="footer-links">
                 <a href="#" id="aboutLink">サイトについて</a> | 
-                <a href="#" id="contactLink">お問い合わせ</a> | 
                 <a href="#" id="privacyLink">プライバシーポリシー</a>
             </div>
+            <p class="footer-contact">📧 お問い合わせ: <a href="mailto:sunzhijijin@gmail.com">sunzhijijin@gmail.com</a></p>
             <p class="credit">© 2025 日本心霊スポットマップ</p>
         </footer>
+    </div>
+
+    <!-- プライバシーポリシーモーダル -->
+    <div id="privacyModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="modal-close" onclick="document.getElementById('privacyModal').style.display='none'">&times;</span>
+            <h2>プライバシーポリシー</h2>
+            <div style="text-align: left; max-height: 500px; overflow-y: auto; padding: 20px; line-height: 1.8;">
+                <h3>個人情報の取り扱いについて</h3>
+                <p>当サイト「日本心霊スポットマップ」では、お客様の個人情報を適切に取り扱い、プライバシーを保護することに努めています。</p>
+                
+                <h3>収集する情報</h3>
+                <p>当サイトでは、以下の情報をブラウザのローカルストレージに保存します:</p>
+                <ul>
+                    <li>お気に入りスポットの情報</li>
+                    <li>コメント投稿内容</li>
+                    <li>閲覧履歴</li>
+                </ul>
+                <p>※ これらの情報はお客様のブラウザ内にのみ保存され、サーバーには送信されません。</p>
+                
+                <h3>Cookieについて</h3>
+                <p>当サイトでは、より良いサービスを提供するためにCookieを使用する場合があります。Cookieを無効にすることも可能ですが、一部機能が制限される場合があります。</p>
+                
+                <h3>アフィリエイトプログラムについて</h3>
+                <p>当サイトは、Amazon.co.jpを宣伝しリンクすることによってサイトが紹介料を獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである、Amazonアソシエイト・プログラムの参加者です。</p>
+                
+                <h3>免責事項</h3>
+                <p>当サイトの情報は、参考情報として提供しています。心霊スポット訪問時の安全は自己責任でお願いします。私有地への無断侵入は法律で禁止されています。</p>
+                
+                <h3>お問い合わせ</h3>
+                <p>プライバシーポリシーに関するお問い合わせは、以下までご連絡ください。<br>
+                メール: sunzhijijin@gmail.com</p>
+                
+                <p style="text-align: right; margin-top: 30px; color: #888;">最終更新日: 2025年10月18日</p>
+            </div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

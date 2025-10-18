@@ -2517,6 +2517,9 @@ function showSpotInfo(spot) {
     displayNews(spot.news);
     displayMedia(spot.media);
     
+    // Amazonアフィリエイトリンクを表示
+    displayAffiliateLinks();
+    
     const dangerSpan = document.getElementById('spotDanger');
     dangerSpan.textContent = spot.danger;
     
@@ -2600,6 +2603,50 @@ function displayMedia(media) {
     } else {
         section.style.display = 'none';
     }
+}
+
+// Amazonアフィリエイトリンクを表示
+function displayAffiliateLinks() {
+    const container = document.getElementById('affiliateLinks');
+    
+    // 心霊スポット関連のおすすめ商品
+    const affiliateProducts = [
+        {
+            title: '日本の心霊スポット完全ガイド',
+            image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=400&fit=crop',
+            price: '¥1,650',
+            link: 'https://www.amazon.co.jp/s?k=心霊スポット+ガイド&tag=yossy0f53-22'
+        },
+        {
+            title: '廃墟探索 安全ガイド',
+            image: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=300&h=400&fit=crop',
+            price: '¥1,980',
+            link: 'https://www.amazon.co.jp/s?k=廃墟+探索+ガイド&tag=yossy0f53-22'
+        },
+        {
+            title: '高性能 LED懐中電灯',
+            image: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=300&h=400&fit=crop',
+            price: '¥2,480',
+            link: 'https://www.amazon.co.jp/s?k=LED懐中電灯+強力&tag=yossy0f53-22'
+        },
+        {
+            title: '心霊写真の撮り方',
+            image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=300&h=400&fit=crop',
+            price: '¥1,430',
+            link: 'https://www.amazon.co.jp/s?k=心霊+写真+撮影&tag=yossy0f53-22'
+        }
+    ];
+    
+    container.innerHTML = affiliateProducts.map(product => `
+        <div class="affiliate-item">
+            <img src="${product.image}" alt="${product.title}">
+            <h4>${product.title}</h4>
+            <div class="price">${product.price}</div>
+            <a href="${product.link}" target="_blank" rel="noopener noreferrer">
+                Amazonで見る →
+            </a>
+        </div>
+    `).join('');
 }
 
 
@@ -3033,14 +3080,17 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('日本心霊スポットマップは、全国の心霊スポット情報を提供するサイトです。\n\n⚠️ 注意: 私有地への無断侵入は違法です。必ず安全に配慮してください。');
     });
     
-    document.getElementById('contactLink').addEventListener('click', (e) => {
-        e.preventDefault();
-        alert('お問い合わせ: info@example.com\n\n新しいスポット情報や体験談の投稿をお待ちしています！');
-    });
-    
+    // プライバシーポリシーモーダル
     document.getElementById('privacyLink').addEventListener('click', (e) => {
         e.preventDefault();
-        alert('プライバシーポリシー\n\n当サイトはLocalStorageを使用してお気に入り情報を保存します。個人情報は収集しません。');
+        document.getElementById('privacyModal').style.display = 'flex';
+    });
+    
+    // プライバシーモーダル外クリックで閉じる
+    document.getElementById('privacyModal').addEventListener('click', (e) => {
+        if (e.target.id === 'privacyModal') {
+            document.getElementById('privacyModal').style.display = 'none';
+        }
     });
     
     setupCommentFeature();
