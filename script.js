@@ -2949,33 +2949,80 @@ function searchSpots() {
     }
 }
 
-// コメントを保存する関数
-function saveComment(spotId, comment) {
-    const comments = JSON.parse(localStorage.getItem('comments')) || {};
-    if (!comments[spotId]) {
-        comments[spotId] = [];
+// コメントを保存する関数（Firebase使用）
+async function saveComment(spotId, comment) {
+    if (!window.firebaseDB) {
+        console.warn('Firebase not initialized yet');
+        alert('コメント機能の準備中です。少しお待ちください。');
+        return;
     }
-    comments[spotId].push(comment);
-    localStorage.setItem('comments', JSON.stringify(comments));
+    
+    try {
+        const commentsRef = window.firebaseRef(window.firebaseDB, `comments/${spotId}`);
+        const newCommentRef = window.firebaseRef(window.firebaseDB, `comments/${spotId}/${Date.now()}`);
+        
+        const commentData = {
+            text: comment,
+            timestamp: Date.now(),
+            date: new Date().toLocaleString('ja-JP')
+        };
+        
+        await window.firebaseSet(newCommentRef, commentData);
+        console.log('コメントを投稿しました');
+    } catch (error) {
+        console.error('コメント投稿に失敗しました:', error);
+        alert('コメントの投稿に失敗しました。もう一度お試しください。');
+    }
 }
 
-// コメントを取得する関数
-function getComments(spotId) {
-    const comments = JSON.parse(localStorage.getItem('comments')) || {};
-    return comments[spotId] || [];
+// コメントを取得する関数（Firebase使用）
+async function getComments(spotId) {
+    if (!window.firebaseDB) {
+        console.warn('Firebase not initialized yet');
+        return [];
+    }
+    
+    try {
+        const commentsRef = window.firebaseRef(window.firebaseDB, `comments/${spotId}`);
+        const snapshot = await window.firebaseGet(commentsRef);
+        const commentsData = snapshot.val() || {};
+        
+        // オブジェクトを配列に変換して、新しい順にソート
+        const commentsArray = Object.values(commentsData).sort((a, b) => b.timestamp - a.timestamp);
+        return commentsArray;
+    } catch (error) {
+        console.error('コメント取得に失敗しました:', error);
+        return [];
+    }
 }
 
-// コメントを表示する関数
-function displayComments(spotId) {
+// コメントを表示する関数（非同期対応）
+async function displayComments(spotId) {
     const commentsList = document.getElementById('commentsList');
-    commentsList.innerHTML = '';
-    const comments = getComments(spotId);
-    comments.forEach(comment => {
-        const commentItem = document.createElement('div');
-        commentItem.className = 'comment-item';
-        commentItem.textContent = comment;
-        commentsList.appendChild(commentItem);
-    });
+    commentsList.innerHTML = '<div style="color: #888; text-align: center; padding: 10px;">読込中...</div>';
+    
+    try {
+        const comments = await getComments(spotId);
+        commentsList.innerHTML = '';
+        
+        if (comments.length === 0) {
+            commentsList.innerHTML = '<div style="color: #888; text-align: center; padding: 10px;">まだコメントがありません。最初のコメントを投稿しましょう!</div>';
+            return;
+        }
+        
+        comments.forEach(comment => {
+            const commentItem = document.createElement('div');
+            commentItem.className = 'comment-item';
+            commentItem.innerHTML = `
+                <div style="color: #888; font-size: 0.85em; margin-bottom: 5px;">${comment.date}</div>
+                <div>${comment.text}</div>
+            `;
+            commentsList.appendChild(commentItem);
+        });
+    } catch (error) {
+        console.error('コメント表示エラー:', error);
+        commentsList.innerHTML = '<div style="color: #ff6b6b; text-align: center; padding: 10px;">コメントの読込に失敗しました</div>';
+    }
 }
 
 // コメント送信ボタンのイベントリスナー
@@ -2983,12 +3030,39 @@ function setupCommentFeature() {
     const submitCommentBtn = document.getElementById('submitComment');
     const commentInput = document.getElementById('commentInput');
 
-    submitCommentBtn.addEventListener('click', () => {
+    submitCommentBtn.addEventListener('click', async () => {
         const comment = commentInput.value.trim();
         if (comment && currentSpot) {
-            saveComment(currentSpot.id, comment);
-            displayComments(currentSpot.id);
+            // ボタンを無効化して二重送信を防ぐ
+            submitCommentBtn.disabled = true;
+            submitCommentBtn.textContent = '送信中...';
+            
+            await saveComment(currentSpot.id, comment);
+            await displayComments(currentSpot.id);
             commentInput.value = '';
+            
+            // ボタンを再有効化
+            submitCommentBtn.disabled = false;
+            submitCommentBtn.textContent = '送信';
+        }
+    });
+    
+    // Enterキーでも送信できるように
+    commentInput.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            const comment = commentInput.value.trim();
+            if (comment && currentSpot) {
+                submitCommentBtn.disabled = true;
+                submitCommentBtn.textContent = '送信中...';
+                
+                await saveComment(currentSpot.id, comment);
+                await displayComments(currentSpot.id);
+                commentInput.value = '';
+                
+                submitCommentBtn.disabled = false;
+                submitCommentBtn.textContent = '送信';
+            }
         }
     });
 }
