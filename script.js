@@ -2949,8 +2949,8 @@ function searchSpots() {
     }
 }
 
-// コメントを保存する関数（Firebase使用）
-async function saveComment(spotId, comment) {
+// コメントを保存する関数（Firebase使用・画像対応）
+async function saveComment(spotId, comment, imageUrl = null, replyToId = null) {
     if (!window.firebaseDB) {
         console.warn('Firebase not initialized yet');
         alert('コメント機能の準備中です。少しお待ちください。');
@@ -2958,20 +2958,58 @@ async function saveComment(spotId, comment) {
     }
     
     try {
-        const commentsRef = window.firebaseRef(window.firebaseDB, `comments/${spotId}`);
-        const newCommentRef = window.firebaseRef(window.firebaseDB, `comments/${spotId}/${Date.now()}`);
+        const commentId = Date.now();
+        const newCommentRef = window.firebaseRef(window.firebaseDB, `comments/${spotId}/${commentId}`);
         
         const commentData = {
+            id: commentId,
             text: comment,
             timestamp: Date.now(),
-            date: new Date().toLocaleString('ja-JP')
+            date: new Date().toLocaleString('ja-JP'),
+            likes: 0,
+            image: imageUrl,
+            replyTo: replyToId,
+            reported: false
         };
         
         await window.firebaseSet(newCommentRef, commentData);
         console.log('コメントを投稿しました');
+        return commentId;
     } catch (error) {
         console.error('コメント投稿に失敗しました:', error);
         alert('コメントの投稿に失敗しました。もう一度お試しください。');
+        return null;
+    }
+}
+
+// いいね機能
+async function likeComment(spotId, commentId) {
+    if (!window.firebaseDB) return;
+    
+    try {
+        const likeRef = window.firebaseRef(window.firebaseDB, `comments/${spotId}/${commentId}/likes`);
+        await window.firebaseRunTransaction(likeRef, (currentValue) => {
+            return (currentValue || 0) + 1;
+        });
+        await displayComments(spotId);
+    } catch (error) {
+        console.error('いいねに失敗しました:', error);
+    }
+}
+
+// 通報機能
+async function reportComment(spotId, commentId) {
+    if (!window.firebaseDB) return;
+    
+    if (!confirm('このコメントを通報しますか?')) return;
+    
+    try {
+        const reportRef = window.firebaseRef(window.firebaseDB, `comments/${spotId}/${commentId}/reported`);
+        await window.firebaseSet(reportRef, true);
+        alert('通報しました。管理者が確認します。');
+        await displayComments(spotId);
+    } catch (error) {
+        console.error('通報に失敗しました:', error);
     }
 }
 
@@ -2987,16 +3025,29 @@ async function getComments(spotId) {
         const snapshot = await window.firebaseGet(commentsRef);
         const commentsData = snapshot.val() || {};
         
-        // オブジェクトを配列に変換して、新しい順にソート
-        const commentsArray = Object.values(commentsData).sort((a, b) => b.timestamp - a.timestamp);
-        return commentsArray;
+        // オブジェクトを配列に変換
+        const commentsArray = Object.entries(commentsData).map(([key, value]) => ({
+            ...value,
+            id: value.id || key
+        }));
+        
+        // 返信を親コメントに紐付け
+        const parentComments = commentsArray.filter(c => !c.replyTo);
+        const replies = commentsArray.filter(c => c.replyTo);
+        
+        parentComments.forEach(parent => {
+            parent.replies = replies.filter(r => r.replyTo === parent.id);
+        });
+        
+        // 新しい順にソート
+        return parentComments.sort((a, b) => b.timestamp - a.timestamp);
     } catch (error) {
         console.error('コメント取得に失敗しました:', error);
         return [];
     }
 }
 
-// コメントを表示する関数（非同期対応）
+// コメントを表示する関数（非同期対応・フル機能版）
 async function displayComments(spotId) {
     const commentsList = document.getElementById('commentsList');
     commentsList.innerHTML = '<div style="color: #888; text-align: center; padding: 10px;">読込中...</div>';
@@ -3013,33 +3064,208 @@ async function displayComments(spotId) {
         comments.forEach(comment => {
             const commentItem = document.createElement('div');
             commentItem.className = 'comment-item';
+            commentItem.style.cssText = 'background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 3px solid #9b4dca;';
+            
+            // 通報されたコメントは薄く表示
+            if (comment.reported) {
+                commentItem.style.opacity = '0.5';
+            }
+            
             commentItem.innerHTML = `
-                <div style="color: #888; font-size: 0.85em; margin-bottom: 5px;">${comment.date}</div>
-                <div>${comment.text}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div style="color: #888; font-size: 0.85em;">${comment.date}</div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="like-btn" data-spot-id="${spotId}" data-comment-id="${comment.id}" 
+                                style="background: none; border: none; cursor: pointer; font-size: 1.1em; display: flex; align-items: center; gap: 5px;">
+                            👍 <span style="color: #666;">${comment.likes || 0}</span>
+                        </button>
+                        <button class="reply-btn" data-comment-id="${comment.id}" 
+                                style="background: none; border: none; cursor: pointer; color: #9b4dca; font-size: 0.9em;">
+                            💬 返信
+                        </button>
+                        <button class="report-btn" data-spot-id="${spotId}" data-comment-id="${comment.id}" 
+                                style="background: none; border: none; cursor: pointer; color: #ff6b6b; font-size: 0.9em;">
+                            🚨 通報
+                        </button>
+                    </div>
+                </div>
+                ${comment.reported ? '<div style="color: #ff6b6b; font-size: 0.85em; margin-bottom: 5px;">⚠️ このコメントは通報されています</div>' : ''}
+                <div style="margin-bottom: 10px; white-space: pre-wrap;">${comment.text}</div>
+                ${comment.image ? `<img src="${comment.image}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" alt="投稿画像">` : ''}
+                <div id="replies-${comment.id}" style="margin-top: 10px; padding-left: 20px; border-left: 2px solid #ddd;"></div>
+                <div id="reply-form-${comment.id}" style="display: none; margin-top: 10px; padding-left: 20px;">
+                    <textarea id="reply-text-${comment.id}" placeholder="返信を書く..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical; min-height: 60px;"></textarea>
+                    <div style="margin-top: 5px; display: flex; gap: 5px;">
+                        <button class="submit-reply-btn" data-spot-id="${spotId}" data-comment-id="${comment.id}" 
+                                style="padding: 5px 15px; background: #9b4dca; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            返信送信
+                        </button>
+                        <button class="cancel-reply-btn" data-comment-id="${comment.id}" 
+                                style="padding: 5px 15px; background: #ccc; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            キャンセル
+                        </button>
+                    </div>
+                </div>
             `;
+            
             commentsList.appendChild(commentItem);
+            
+            // 返信を表示
+            if (comment.replies && comment.replies.length > 0) {
+                const repliesContainer = document.getElementById(`replies-${comment.id}`);
+                comment.replies.forEach(reply => {
+                    const replyItem = document.createElement('div');
+                    replyItem.style.cssText = 'background: #fff; padding: 10px; margin-top: 10px; border-radius: 6px; font-size: 0.95em;';
+                    replyItem.innerHTML = `
+                        <div style="color: #888; font-size: 0.85em; margin-bottom: 5px;">${reply.date}</div>
+                        <div style="white-space: pre-wrap;">${reply.text}</div>
+                        ${reply.image ? `<img src="${reply.image}" style="max-width: 100%; border-radius: 6px; margin-top: 8px;" alt="返信画像">` : ''}
+                    `;
+                    repliesContainer.appendChild(replyItem);
+                });
+            }
         });
+        
+        // イベントリスナーを設定
+        setupCommentActions(spotId);
+        
     } catch (error) {
         console.error('コメント表示エラー:', error);
         commentsList.innerHTML = '<div style="color: #ff6b6b; text-align: center; padding: 10px;">コメントの読込に失敗しました</div>';
     }
 }
 
-// コメント送信ボタンのイベントリスナー
+// コメントアクション（いいね、返信、通報）のイベントリスナー
+function setupCommentActions(spotId) {
+    // いいねボタン
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const commentId = btn.dataset.commentId;
+            likeComment(spotId, commentId);
+        });
+    });
+    
+    // 返信ボタン
+    document.querySelectorAll('.reply-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const commentId = btn.dataset.commentId;
+            const replyForm = document.getElementById(`reply-form-${commentId}`);
+            replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
+        });
+    });
+    
+    // 返信送信ボタン
+    document.querySelectorAll('.submit-reply-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const commentId = btn.dataset.commentId;
+            const replyText = document.getElementById(`reply-text-${commentId}`).value.trim();
+            if (replyText) {
+                btn.disabled = true;
+                btn.textContent = '送信中...';
+                await saveComment(spotId, replyText, null, parseInt(commentId));
+                await displayComments(spotId);
+            }
+        });
+    });
+    
+    // 返信キャンセルボタン
+    document.querySelectorAll('.cancel-reply-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const commentId = btn.dataset.commentId;
+            const replyForm = document.getElementById(`reply-form-${commentId}`);
+            replyForm.style.display = 'none';
+            document.getElementById(`reply-text-${commentId}`).value = '';
+        });
+    });
+    
+    // 通報ボタン
+    document.querySelectorAll('.report-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const commentId = btn.dataset.commentId;
+            reportComment(spotId, commentId);
+        });
+    });
+}
+
+// 画像をBase64に変換する関数
+function imageToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// 画像をアップロードする関数（Base64でFirebaseに直接保存）
+async function uploadImage(file) {
+    try {
+        // ファイルサイズチェック（2MB以下）
+        if (file.size > 2 * 1024 * 1024) {
+            alert('画像サイズは2MB以下にしてください');
+            return null;
+        }
+        
+        // Base64に変換
+        const base64 = await imageToBase64(file);
+        return base64;
+    } catch (error) {
+        console.error('画像アップロードに失敗しました:', error);
+        alert('画像のアップロードに失敗しました');
+        return null;
+    }
+}
+
+// コメント送信ボタンのイベントリスナー（画像対応）
 function setupCommentFeature() {
     const submitCommentBtn = document.getElementById('submitComment');
     const commentInput = document.getElementById('commentInput');
+    const imageInput = document.getElementById('commentImageInput');
+    const imagePreview = document.getElementById('imagePreview');
+
+    // 画像選択時のプレビュー
+    if (imageInput) {
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.innerHTML = `
+                        <div style="position: relative; display: inline-block;">
+                            <img src="${e.target.result}" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+                            <button id="removeImage" style="position: absolute; top: 5px; right: 5px; background: red; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">✕</button>
+                        </div>
+                    `;
+                    
+                    document.getElementById('removeImage').addEventListener('click', () => {
+                        imageInput.value = '';
+                        imagePreview.innerHTML = '';
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 
     submitCommentBtn.addEventListener('click', async () => {
         const comment = commentInput.value.trim();
-        if (comment && currentSpot) {
+        if ((comment || (imageInput && imageInput.files[0])) && currentSpot) {
             // ボタンを無効化して二重送信を防ぐ
             submitCommentBtn.disabled = true;
             submitCommentBtn.textContent = '送信中...';
             
-            await saveComment(currentSpot.id, comment);
+            let imageUrl = null;
+            if (imageInput && imageInput.files[0]) {
+                imageUrl = await uploadImage(imageInput.files[0]);
+            }
+            
+            await saveComment(currentSpot.id, comment || '📷 画像を投稿しました', imageUrl);
             await displayComments(currentSpot.id);
             commentInput.value = '';
+            if (imageInput) {
+                imageInput.value = '';
+                imagePreview.innerHTML = '';
+            }
             
             // ボタンを再有効化
             submitCommentBtn.disabled = false;
