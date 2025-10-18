@@ -707,18 +707,21 @@ footer .credit {
         width: 85%;
         max-width: 320px;
         height: 100vh;
+        max-height: 100vh;
         z-index: 2000;
-        overflow-y: auto;
+        overflow-y: scroll !important;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
         transition: left 0.3s ease;
-        padding: 70px 15px 20px 15px;
+        padding: 70px 15px 80px 15px;
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+        overscroll-behavior: contain;
     }
     
     .controls.mobile-open {
         left: 0;
+        overflow-y: scroll !important;
     }
     
     /* オーバーレイ */
@@ -738,9 +741,10 @@ footer .credit {
         display: block;
     }
     
-    header {
+    .controls header {
         padding: 15px 10px;
         margin-bottom: 15px;
+        position: relative;
     }
     
     header h1 {
@@ -766,23 +770,9 @@ footer .credit {
     }
     
     #map {
-        height: 100vh;
-        min-height: 100vh;
-        border-radius: 0;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        z-index: 1;
-    }
-    
-    .main-content {
-        position: relative;
-        z-index: 1;
-    }
-    
-    .spot-info {
-        display: none;
+        height: 50vh;
+        min-height: 300px;
+        border-radius: 10px;
     }
     
     .filter-buttons {
@@ -844,7 +834,9 @@ footer .credit {
     
     /* ランキングをコンパクトに */
     .ranking-list {
-        max-height: 200px;
+        max-height: 300px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     .ranking-list li {
@@ -855,6 +847,8 @@ footer .credit {
     /* ドロップダウンメニュー */
     .dropdown-menu {
         max-height: 250px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 }
 
