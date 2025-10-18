@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sunzhijijin-commits.github.io/haunted-spots-map/sitemap.xml
