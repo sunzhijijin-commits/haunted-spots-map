@@ -2517,8 +2517,8 @@ function showSpotInfo(spot) {
     displayNews(spot.news);
     displayMedia(spot.media);
     
-    // Amazonアフィリエイトリンクを表示
-    displayAffiliateLinks();
+    // Amazonアフィリエイトリンクを表示（スポット情報を渡す）
+    displayAffiliateLinks(spot);
     
     const dangerSpan = document.getElementById('spotDanger');
     dangerSpan.textContent = spot.danger;
@@ -2605,37 +2605,170 @@ function displayMedia(media) {
     }
 }
 
-// Amazonアフィリエイトリンクを表示
-function displayAffiliateLinks() {
+// Amazonアフィリエイトリンクを表示（スポットに応じて変更）
+function displayAffiliateLinks(spot) {
     const container = document.getElementById('affiliateLinks');
     
-    // 心霊スポット関連のおすすめ商品
-    const affiliateProducts = [
-        {
-            title: '日本の心霊スポット完全ガイド',
-            image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=400&fit=crop',
-            price: '¥1,650',
-            link: 'https://www.amazon.co.jp/s?k=心霊スポット+ガイド&tag=yossy0f53-22'
+    // スポットの種類に応じた商品セット
+    let affiliateProducts = [];
+    
+    // 基本の実用的な商品
+    const commonProducts = {
+        camera: {
+            title: 'アクションカメラ 4K',
+            image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=300&h=400&fit=crop',
+            price: '¥8,980',
+            link: 'https://www.amazon.co.jp/s?k=アクションカメラ+4K&tag=yossy0f53-22'
         },
-        {
-            title: '廃墟探索 安全ガイド',
-            image: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=300&h=400&fit=crop',
-            price: '¥1,980',
-            link: 'https://www.amazon.co.jp/s?k=廃墟+探索+ガイド&tag=yossy0f53-22'
-        },
-        {
+        flashlight: {
             title: '高性能 LED懐中電灯',
             image: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=300&h=400&fit=crop',
             price: '¥2,480',
             link: 'https://www.amazon.co.jp/s?k=LED懐中電灯+強力&tag=yossy0f53-22'
         },
-        {
-            title: '心霊写真の撮り方',
-            image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=300&h=400&fit=crop',
-            price: '¥1,430',
-            link: 'https://www.amazon.co.jp/s?k=心霊+写真+撮影&tag=yossy0f53-22'
+        water: {
+            title: 'ミネラルウォーター 24本',
+            image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=300&h=400&fit=crop',
+            price: '¥1,680',
+            link: 'https://www.amazon.co.jp/s?k=ミネラルウォーター+2L&tag=yossy0f53-22'
+        },
+        snack: {
+            title: 'エナジーバー 12本セット',
+            image: 'https://images.unsplash.com/photo-1590080874088-eec64895b423?w=300&h=400&fit=crop',
+            price: '¥1,980',
+            link: 'https://www.amazon.co.jp/s?k=エナジーバー+プロテイン&tag=yossy0f53-22'
+        },
+        recorder: {
+            title: 'ICレコーダー 高音質',
+            image: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=300&h=400&fit=crop',
+            price: '¥5,480',
+            link: 'https://www.amazon.co.jp/s?k=ICレコーダー+高音質&tag=yossy0f53-22'
+        },
+        tripod: {
+            title: 'カメラ三脚 軽量',
+            image: 'https://images.unsplash.com/photo-1606986628994-d6dd9ff49954?w=300&h=400&fit=crop',
+            price: '¥3,280',
+            link: 'https://www.amazon.co.jp/s?k=カメラ三脚+軽量&tag=yossy0f53-22'
+        },
+        thermal: {
+            title: 'サーモグラフィーカメラ',
+            image: 'https://images.unsplash.com/photo-1614935151651-0bea6508db6b?w=300&h=400&fit=crop',
+            price: '¥12,800',
+            link: 'https://www.amazon.co.jp/s?k=サーモグラフィー+カメラ&tag=yossy0f53-22'
+        },
+        bugspray: {
+            title: '虫よけスプレー 強力',
+            image: 'https://images.unsplash.com/photo-1593113646773-028c64a8f1b8?w=300&h=400&fit=crop',
+            price: '¥980',
+            link: 'https://www.amazon.co.jp/s?k=虫よけスプレー+強力&tag=yossy0f53-22'
+        },
+        mask: {
+            title: '防塵マスク N95',
+            image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=400&fit=crop',
+            price: '¥1,280',
+            link: 'https://www.amazon.co.jp/s?k=防塵マスク+N95&tag=yossy0f53-22'
+        },
+        shoes: {
+            title: '安全靴 作業靴',
+            image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=400&fit=crop',
+            price: '¥4,980',
+            link: 'https://www.amazon.co.jp/s?k=安全靴+作業靴&tag=yossy0f53-22'
+        },
+        jacket: {
+            title: '防寒ジャケット',
+            image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300&h=400&fit=crop',
+            price: '¥5,980',
+            link: 'https://www.amazon.co.jp/s?k=防寒ジャケット+アウトドア&tag=yossy0f53-22'
+        },
+        bearbell: {
+            title: '熊よけ鈴',
+            image: 'https://images.unsplash.com/photo-1504006833117-8886a355efbf?w=300&h=400&fit=crop',
+            price: '¥880',
+            link: 'https://www.amazon.co.jp/s?k=熊よけ鈴+登山&tag=yossy0f53-22'
+        },
+        incense: {
+            title: 'お線香セット',
+            image: 'https://images.unsplash.com/photo-1608533395648-632e8c4c1ba3?w=300&h=400&fit=crop',
+            price: '¥1,480',
+            link: 'https://www.amazon.co.jp/s?k=線香+供養&tag=yossy0f53-22'
+        },
+        sake: {
+            title: '日本酒 一升瓶',
+            image: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=300&h=400&fit=crop',
+            price: '¥2,980',
+            link: 'https://www.amazon.co.jp/s?k=日本酒+一升瓶&tag=yossy0f53-22'
+        },
+        manga: {
+            title: '心霊漫画ベストセレクション',
+            image: 'https://images.unsplash.com/photo-1612178537253-bccd437b730e?w=300&h=400&fit=crop',
+            price: '¥680',
+            link: 'https://www.amazon.co.jp/s?k=心霊+漫画&tag=yossy0f53-22'
+        },
+        toy: {
+            title: '面白グッズセット',
+            image: 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=300&h=400&fit=crop',
+            price: '¥1,980',
+            link: 'https://www.amazon.co.jp/s?k=面白グッズ+パーティー&tag=yossy0f53-22'
         }
-    ];
+    };
+    
+    // スポット種類別の特化商品
+    const typeSpecificProducts = {
+        '廃墟': [
+            commonProducts.shoes,
+            commonProducts.mask,
+            commonProducts.flashlight,
+            commonProducts.camera
+        ],
+        'トンネル': [
+            commonProducts.flashlight,
+            {
+                title: 'ヘッドライト LED',
+                image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=300&h=400&fit=crop',
+                price: '¥3,280',
+                link: 'https://www.amazon.co.jp/s?k=ヘッドライト+LED+強力&tag=yossy0f53-22'
+            },
+            commonProducts.camera,
+            commonProducts.recorder
+        ],
+        '峠': [
+            commonProducts.bearbell,
+            commonProducts.water,
+            commonProducts.jacket,
+            commonProducts.bugspray
+        ],
+        '病院': [
+            commonProducts.mask,
+            commonProducts.shoes,
+            commonProducts.flashlight,
+            commonProducts.recorder
+        ],
+        '自殺スポット': [
+            commonProducts.incense,
+            commonProducts.sake,
+            commonProducts.water,
+            commonProducts.manga
+        ],
+        'その他': [
+            commonProducts.camera,
+            commonProducts.tripod,
+            commonProducts.thermal,
+            commonProducts.toy
+        ]
+    };
+    
+    // スポットの種類に応じて商品を選択
+    if (spot && spot.type && typeSpecificProducts[spot.type]) {
+        affiliateProducts = typeSpecificProducts[spot.type];
+    } else {
+        // デフォルト商品（その他の種類）
+        affiliateProducts = [
+            commonProducts.camera,
+            commonProducts.snack,
+            commonProducts.flashlight,
+            commonProducts.toy
+        ];
+    }
     
     container.innerHTML = affiliateProducts.map(product => `
         <div class="affiliate-item">
