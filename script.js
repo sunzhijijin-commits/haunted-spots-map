@@ -3128,12 +3128,22 @@ function setupMobileFeatures() {
         }, { passive: true });
     }
     
-    // プルトゥリフレッシュの無効化（誤動作防止）
+    // プルトゥリフレッシュの無効化（誤動作防止） - コントロールパネル外のみ
     document.body.addEventListener('touchmove', (e) => {
         if (controlsPanel.classList.contains('mobile-open')) {
-            e.preventDefault();
+            // コントロールパネル内のスクロールは許可
+            if (!controlsPanel.contains(e.target)) {
+                e.preventDefault();
+            }
         }
     }, { passive: false });
+    
+    // コントロールパネル内のスクロールを明示的に有効化
+    if (controlsPanel) {
+        controlsPanel.addEventListener('touchmove', (e) => {
+            e.stopPropagation();
+        }, { passive: true });
+    }
     
     // 画面回転時の調整
     window.addEventListener('orientationchange', () => {
